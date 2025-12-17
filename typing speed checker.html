@@ -23,65 +23,32 @@
       max-width: 800px;
       box-shadow: 0 10px 25px rgba(0,0,0,0.4);
     }
-    h1 {
-      text-align: center;
-      color: #38bdf8;
-    }
+    h1 { text-align: center; color: #38bdf8; }
     .controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: center;
-      margin: 15px 0;
+      display: flex; flex-wrap: wrap; gap: 10px;
+      justify-content: center; margin: 15px 0;
     }
     button, input {
-      padding: 8px 12px;
-      border-radius: 8px;
-      border: none;
-      font-size: 14px;
+      padding: 8px 12px; border-radius: 8px;
+      border: none; font-size: 14px;
     }
-    button {
-      background: #2563eb;
-      color: white;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #1d4ed8;
-    }
-    #timer {
-      text-align: center;
-      font-size: 18px;
-      margin: 10px 0;
-      color: #22c55e;
-    }
+    button { background: #2563eb; color: white; cursor: pointer; }
+    button:hover { background: #1d4ed8; }
+    #timer { text-align: center; font-size: 18px; margin: 10px 0; color: #22c55e; }
     #textDisplay {
-      background: #020617;
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-      line-height: 1.6;
+      background: #020617; padding: 15px; border-radius: 8px;
+      margin-bottom: 10px; line-height: 1.6;
     }
     #typingArea {
-      width: 100%;
-      height: 120px;
-      padding: 10px;
-      border-radius: 8px;
-      border: none;
-      font-size: 16px;
-      resize: none;
+      width: 100%; height: 120px; padding: 10px;
+      border-radius: 8px; border: none;
+      font-size: 16px; resize: none;
     }
     #results {
-      display: none;
-      margin-top: 20px;
-      background: #020617;
-      padding: 15px;
-      border-radius: 8px;
-      text-align: center;
+      display: none; margin-top: 20px; background: #020617;
+      padding: 15px; border-radius: 8px; text-align: center;
     }
-    .highlight {
-      color: #22c55e;
-      font-weight: bold;
-    }
+    .highlight { color: #22c55e; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -98,11 +65,8 @@
     </div>
 
     <div id="timer">Time: 0s</div>
-
     <div id="textDisplay"></div>
-
     <textarea id="typingArea" placeholder="Start typing here..." disabled></textarea>
-
     <div id="results"></div>
   </div>
 
@@ -120,10 +84,8 @@
       "Small efforts, when repeated daily, can create remarkable results."
     ];
 
-    let timeLimit = 0;
-    let timeLeft = 0;
-    let timerInterval;
-    let startTime;
+    let timeLimit = 0, timeLeft = 0, timerInterval;
+    let generatedText = "";
 
     const timerEl = document.getElementById("timer");
     const textDisplay = document.getElementById("textDisplay");
@@ -137,54 +99,42 @@
 
     function setCustomTime() {
       const custom = document.getElementById("customTime").value;
-      if (custom && custom > 0) {
-        setTime(parseInt(custom));
-      }
+      if (custom && custom > 0) setTime(parseInt(custom));
     }
 
     function generateText() {
       let essay = "";
-      const sentenceCount = Math.floor(Math.random() * 5) + 10; // 10–15 sentences
+      const count = Math.floor(Math.random() * 5) + 12; // 12–16 sentences
 
-      for (let i = 0; i < sentenceCount; i++) {
-        let sentence = sentencePool[Math.floor(Math.random() * sentencePool.length)];
-
-        // Add random punctuation complexity
-        if (Math.random() > 0.6) sentence = sentence.replace(".", ", however, ");
-        if (Math.random() > 0.7) sentence += "!";
-        if (Math.random() > 0.8) sentence = sentence.replace(".", "?");
-
-        essay += sentence + " ";
+      for (let i = 0; i < count; i++) {
+        let s = sentencePool[Math.floor(Math.random() * sentencePool.length)];
+        if (Math.random() > 0.6) s = s.replace('.', ', however,');
+        if (Math.random() > 0.7) s += '!';
+        if (Math.random() > 0.8) s = s.replace('.', '?');
+        essay += s + ' ';
       }
       return essay.trim();
     }
 
     function startTest() {
-      if (timeLimit === 0) {
-        alert("Please select a time duration first!");
-        return;
-      }
+      if (!timeLimit) return alert("Please select a time duration first!");
 
       resultsEl.style.display = "none";
       typingArea.value = "";
       typingArea.disabled = false;
       typingArea.focus();
 
-      const text = generateText();
-      textDisplay.textContent = text;
+      generatedText = generateText();
+      textDisplay.textContent = generatedText;
 
       timeLeft = timeLimit;
       timerEl.textContent = `Time: ${timeLeft}s`;
-      startTime = Date.now();
 
       clearInterval(timerInterval);
       timerInterval = setInterval(() => {
         timeLeft--;
         timerEl.textContent = `Time: ${timeLeft}s`;
-
-        if (timeLeft <= 0) {
-          endTest();
-        }
+        if (timeLeft <= 0) endTest();
       }, 1000);
     }
 
@@ -192,21 +142,33 @@
       clearInterval(timerInterval);
       typingArea.disabled = true;
 
-      const typedText = typingArea.value.trim();
-      const wordsTyped = typedText === "" ? 0 : typedText.split(/\s+/).length;
-      const timeTakenMinutes = timeLimit / 60;
-      const wpm = Math.round(wordsTyped / timeTakenMinutes);
-      const wps = (wordsTyped / timeLimit).toFixed(2);
+      const typed = typingArea.value;
+      const original = generatedText;
+
+      let correctChars = 0;
+      const minLength = Math.min(typed.length, original.length);
+
+      for (let i = 0; i < minLength; i++) {
+        if (typed[i] === original[i]) correctChars++;
+      }
+
+      const totalTypedChars = typed.length;
+      const accuracy = totalTypedChars === 0 ? 0 : ((correctChars / totalTypedChars) * 100).toFixed(2);
+
+      const words = typed.trim() ? typed.trim().split(/\s+/).length : 0;
+      const minutes = timeLimit / 60;
+      const wpm = Math.round(words / minutes);
+      const wps = (words / timeLimit).toFixed(2);
 
       resultsEl.style.display = "block";
       resultsEl.innerHTML = `
         <h2>Results</h2>
-        <p>Words Typed: <span class="highlight">${wordsTyped}</span></p>
+        <p>Words Typed: <span class="highlight">${words}</span></p>
         <p>Speed: <span class="highlight">${wpm} WPM</span></p>
         <p>Speed: <span class="highlight">${wps} Words/Second</span></p>
+        <p>Accuracy: <span class="highlight">${accuracy}%</span></p>
       `;
     }
   </script>
 </body>
 </html>
-
