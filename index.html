@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Typing Speed Test</title>
 
-  <!-- Prevent aggressive caching on GitHub Pages -->
+  <!-- Reduce caching issues on GitHub Pages -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
@@ -26,7 +26,7 @@
       padding: 25px;
       border-radius: 12px;
       width: 90%;
-      max-width: 800px;
+      max-width: 900px;
       box-shadow: 0 10px 25px rgba(0,0,0,0.4);
     }
     h1 { text-align: center; color: #38bdf8; }
@@ -56,9 +56,14 @@
       padding: 15px;
       border-radius: 8px;
       margin-bottom: 10px;
-      line-height: 1.7;
-      min-height: 140px;
+      line-height: 1.8;
+      min-height: 160px;
+      font-size: 16px;
+      word-wrap: break-word;
     }
+    .correct { color: #22c55e; }
+    .incorrect { color: #ef4444; text-decoration: underline; }
+    .pending { color: #94a3b8; }
     #typingArea {
       width: 100%;
       height: 120px;
@@ -112,9 +117,7 @@
       "Small efforts, when repeated daily, can create remarkable results."
     ];
 
-    let timeLimit = 0;
-    let timeLeft = 0;
-    let timerInterval;
+    let timeLimit = 0, timeLeft = 0, timerInterval;
     let generatedText = "";
 
     const timerEl = document.getElementById("timer");
@@ -122,21 +125,20 @@
     const typingArea = document.getElementById("typingArea");
     const resultsEl = document.getElementById("results");
 
-    function setTime(seconds) {
-      timeLimit = seconds;
-      timerEl.textContent = `Time: ${seconds}s`;
+    function setTime(sec) {
+      timeLimit = sec;
+      timerEl.textContent = `Time: ${sec}s`;
     }
 
     function setCustomTime() {
-      const custom = document.getElementById("customTime").value;
-      if (custom && custom > 0) setTime(parseInt(custom));
+      const v = parseInt(document.getElementById("customTime").value);
+      if (v && v > 0) setTime(v);
     }
 
     function generateText() {
       let essay = "";
-      const sentenceCount = Math.floor(Math.random() * 5) + 12; // 12–16 sentences
-
-      for (let i = 0; i < sentenceCount; i++) {
+      const count = Math.floor(Math.random() * 5) + 15; // 15–19 sentences
+      for (let i = 0; i < count; i++) {
         let s = sentencePool[Math.floor(Math.random() * sentencePool.length)];
         if (Math.random() > 0.6) s = s.replace('.', ', however,');
         if (Math.random() > 0.7) s += '!';
@@ -146,11 +148,22 @@
       return essay.trim();
     }
 
-    function startTest() {
-      if (!timeLimit) {
-        alert("Please select a time duration first!");
-        return;
+    function renderText(typed = "") {
+      let html = "";
+      for (let i = 0; i < generatedText.length; i++) {
+        if (i < typed.length) {
+          html += typed[i] === generatedText[i]
+            ? `<span class="correct">${generatedText[i]}</span>`
+            : `<span class="incorrect">${generatedText[i]}</span>`;
+        } else {
+          html += `<span class="pending">${generatedText[i]}</span>`;
+        }
       }
+      textDisplay.innerHTML = html;
+    }
+
+    function startTest() {
+      if (!timeLimit) return alert("Please select a time duration first!");
 
       resultsEl.style.display = "none";
       typingArea.value = "";
@@ -158,7 +171,7 @@
       typingArea.focus();
 
       generatedText = generateText();
-      textDisplay.textContent = generatedText;
+      renderText();
 
       timeLeft = timeLimit;
       timerEl.textContent = `Time: ${timeLeft}s`;
@@ -171,40 +184,42 @@
       }, 1000);
     }
 
+    typingArea.addEventListener("input", () => {
+      if (typingArea.value.length >= generatedText.length) {
+        typingArea.value = typingArea.value.slice(0, generatedText.length);
+        endTest();
+      }
+      renderText(typingArea.value);
+    });
+
     function endTest() {
       clearInterval(timerInterval);
       typingArea.disabled = true;
 
-      const typedText = typingArea.value;
-      const originalText = generatedText;
+      const typed = typingArea.value;
+      let correct = 0;
 
-      let correctChars = 0;
-      const compareLength = Math.min(typedText.length, originalText.length);
-
-      for (let i = 0; i < compareLength; i++) {
-        if (typedText[i] === originalText[i]) correctChars++;
+      for (let i = 0; i < typed.length; i++) {
+        if (typed[i] === generatedText[i]) correct++;
       }
 
-      const totalTypedChars = typedText.length;
-      const accuracy = totalTypedChars === 0
-        ? 0
-        : ((correctChars / totalTypedChars) * 100).toFixed(2);
+      const incorrect = typed.length - correct;
+      const accuracy = typed.length ? ((correct / typed.length) * 100).toFixed(2) : 0;
 
-      const wordsTyped = typedText.trim()
-        ? typedText.trim().split(/\s+/).length
-        : 0;
-
+      const words = typed.trim() ? typed.trim().split(/\s+/).length : 0;
       const minutes = timeLimit / 60;
-      const wpm = Math.round(wordsTyped / minutes);
-      const wps = (wordsTyped / timeLimit).toFixed(2);
+      const wpm = Math.round(words / minutes);
+      const netWpm = Math.round(wpm * (accuracy / 100));
 
       resultsEl.style.display = "block";
       resultsEl.innerHTML = `
         <h2>Results</h2>
-        <p>Words Typed: <span class="highlight">${wordsTyped}</span></p>
-        <p>Speed: <span class="highlight">${wpm} WPM</span></p>
-        <p>Speed: <span class="highlight">${wps} Words/Second</span></p>
+        <p>Words Typed: <span class="highlight">${words}</span></p>
+        <p>WPM: <span class="highlight">${wpm}</span></p>
+        <p>Net WPM: <span class="highlight">${netWpm}</span></p>
         <p>Accuracy: <span class="highlight">${accuracy}%</span></p>
+        <p>Correct Characters: <span class="highlight">${correct}</span></p>
+        <p>Wrong Characters: <span class="highlight">${incorrect}</span></p>
       `;
     }
   </script>
